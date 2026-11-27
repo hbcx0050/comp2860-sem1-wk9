@@ -1,56 +1,27 @@
 from typing import Tuple
 
+from Cryptodome.Random import get_random_bytes
+from Cryptodome.Util.strxor import strxor
+
 class VernamCipher:
-    """
-    The Vernam cipher has a structure similar to that of a stream cipher.
-    However, the keystream is a random byte sequence which is exactly as long as the plaintext and is only used once.
+    """One-time pad: XOR with a random key as long as the message, used once.
+    No key -> set up for encryption. Key given -> set up for decryption."""
 
-    If no key is supplied the cipher is initialised for encryption. Otherwise, the cipher is initialised for decryption.
-
-    Attributes:
-        key (bytes): The key to use for encryption/decryption
-    """
     def __init__(self, key: bytes = None) -> None:
         if key is not None:
             self.key = key
 
-    def encrypt(self,plaintext: bytes) -> Tuple[bytes, bytes]:
-        """
-        Enciphers a plaintext
-
-        TODO: This method should:
-            1. Creates a random key which is exactly as long as the plaintext.
-            2. Encrypt the plaintext by XORing with the key
-            3. Return the ciphertext and key
-
-        Parameters:
-            plaintext (bytes): The plaintext to be encrypted
-
-        Returns:
-            Tuple[bytes,bytes]: The ciphertext and key
-        """
-        # TODO: REPLACE WITH YOUR IMPLEMENTATION
-        ciphertext = b""
-        key = b""
+    def encrypt(self, plaintext: bytes) -> Tuple[bytes, bytes]:
+        """Make a random key the length of plaintext, XOR them. Returns (ciphertext, key)."""
+        key = get_random_bytes(len(plaintext))
+        ciphertext = strxor(plaintext, key)
         return (ciphertext, key)
 
-    def decrypt(self,ciphertext: bytes) -> bytes:
-        """
-        Deciphers a ciphertext
-
-        TODO: This method should:
-            1. Decrypt the ciphertext by XORing with the key
-            2. Return the plaintext
-
-        Parameters:
-            ciphertext (bytes): The ciphertext to be decrypted
-
-        Returns:
-            bytes: The plaintext
-        """
-        # TODO: REPLACE WITH YOUR IMPLEMENTATION
-        plaintext = b""
+    def decrypt(self, ciphertext: bytes) -> bytes:
+        """XOR ciphertext with self.key. Returns plaintext."""
+        plaintext = strxor(ciphertext, self.key)
         return plaintext
+
 
 def main():
     alice_cipher = VernamCipher()
@@ -61,6 +32,7 @@ def main():
     plaintext = bob_cipher.decrypt(ciphertext)
     print(plaintext)
     assert plaintext == message
+
 
 if __name__ == "__main__":
     main()
