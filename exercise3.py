@@ -1,67 +1,45 @@
 from Cryptodome.Random import get_random_bytes
+from Cryptodome.Util.strxor import strxor
+
 
 class ARC4:
-    """
-    Attributes:
-        S (list): The internal state of the ARC4 cipher. It is an array of 256 8-bit unsigned integers.
-    """
+    """RC4 stream cipher. self.S is the 256-byte internal state."""
+
     def __init__(self, key: bytes) -> None:
-        """
-        TODO: The constructor should implement the ARC4 key scheduling algorithm (KSA) as specified on the worksheet
+        """Key scheduling algorithm (KSA). Key is 5-256 bytes."""
+        if not 5 <= len(key) <= 256:
+            raise ValueError("Key must be 5-256 bytes")
 
-        Parameters:
-            key (bytes): The key should be 5 to 256 bytes long
-        """
-        # TODO: REPLACE WITH YOUR IMPLEMENTATION
-        pass
+        # Start with S = 0..255, then shuffle it using the key.
+        self.S = list(range(256))
+        j = 0
+        for i in range(256):
+            j = (j + self.S[i] + key[i % len(key)]) % 256
+            self.S[i], self.S[j] = self.S[j], self.S[i]
 
-    def prga(self, keystream_length:int) -> bytes:
-        """
-        TODO: This function should implement the ARC4 pseudorandom generation algorithm (PRGA) as specified on the worksheet
+        # PRGA position, kept so successive calls continue the same stream.
+        self.i = 0
+        self.j = 0
 
-        Parameters:
-            keystream_length (int): The plaintext length
+    def prga(self, keystream_length: int) -> bytes:
+        """Pseudorandom generation algorithm (PRGA). Returns keystream_length bytes."""
+        S = self.S
+        keystream = bytearray()
+        for _ in range(keystream_length):
+            self.i = (self.i + 1) % 256
+            self.j = (self.j + S[self.i]) % 256
+            S[self.i], S[self.j] = S[self.j], S[self.i]
+            keystream.append(S[(S[self.i] + S[self.j]) % 256])
+        return bytes(keystream)
 
-        Returns:
-            bytes: The keystream
-        """
-        # TODO: REPLACE WITH YOUR IMPLEMENTATION
-        keystream = b""
-        return keystream
+    def encrypt(self, plaintext: bytes) -> bytes:
+        """XOR plaintext with a keystream of the same length."""
+        return strxor(plaintext, self.prga(len(plaintext)))
 
-    def encrypt(self, plaintext:bytes) -> bytes:
-        """
-        Encrypts the plaintext using the ARC4 cipher.
+    def decrypt(self, ciphertext: bytes) -> bytes:
+        """XOR ciphertext with a keystream of the same length."""
+        return strxor(ciphertext, self.prga(len(ciphertext)))
 
-        TODO: Your implementation should:
-            1. Generate a keystream as long as the plaintext
-            2. XOR the keystream with the plaintext
-
-        Parameters:
-            plaintext (bytes): The plaintext to be encrypted
-        Returns:
-            bytes: The ciphertext
-        """
-        # TODO: REPLACE WITH YOUR IMPLEMENTATION
-        ciphertext = b""
-        return ciphertext
-
-    def decrypt(self, ciphertext:bytes) -> bytes:
-        """
-        Decrypts the ciphertext using the ARC4 cipher.
-
-        TODO: Your implementation should:
-            1. Generate a keystream as long as the ciphertext
-            2. XOR the keystream with the ciphertext
-
-        Parameters:
-            ciphertext (bytes): The ciphertext to be decrypted
-        Returns:
-            bytes: The plaintext
-        """
-        # TODO: REPLACE WITH YOUR IMPLEMENTATION
-        plaintext = b""
-        return plaintext
 
 def main():
     key = get_random_bytes(32)
@@ -73,6 +51,7 @@ def main():
     plaintext = bob_cipher.decrypt(ciphertext)
     print(plaintext)
     assert plaintext == message
+
 
 if __name__ == "__main__":
     main()
